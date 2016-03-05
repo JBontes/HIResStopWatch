@@ -25,10 +25,13 @@ type
     // Todo, make Sample generic, so it can accept Procs with arguments.
     class function Sample(A: TProc; Repeats: integer; EmptyProc: TProc = nil;
       LowestTimingOfXAttempts: integer = 10): int64; static;
+
     function GetElapsedMilliseconds: int64;
     property ElapsedTicks: int64 read GetElapsedTicks;
     property ElapsedMilliseconds: int64 read GetElapsedMilliseconds;
   end;
+
+
 
 implementation
 
@@ -99,7 +102,6 @@ begin
   NormalTime := (FStop - FStart) div divider;
   if SubtractLoop then
   begin
-
     EmptyTicks := MaxInt;
     // Time empty loop.
     for A := 1 to FRepeatCount do
@@ -168,6 +170,8 @@ begin
   end;
 end;
 
+
+
 class function THiResStopWatch.StartNew(LowestTimingOfXAttempts: integer = 10)
   : THiResStopWatch;
 begin
@@ -184,5 +188,7 @@ begin
   FMsStopWatch.Stop;
   FRunning := false;
 end;
+
+
 
 end.
