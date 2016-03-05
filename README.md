@@ -28,7 +28,7 @@ end;
 
 # Accurate  
 Given enough repeats the timer is accurate to within 2 CPU cycles.  
-The timer knows about out-of-order execution and eliminates this issues as per [Intel recommendations](http://www.intel.de/content/dam/www/public/us/en/documents/white-papers/ia-32-ia-64-benchmark-code-execution-paper.pdf).
+The timer knows about out-of-order execution and eliminates this issue as per [Intel recommendations](http://www.intel.de/content/dam/www/public/us/en/documents/white-papers/ia-32-ia-64-benchmark-code-execution-paper.pdf).
 The shorter the timing, the more repeats are needed.  
 
 1.000.000 is normal for single cycle timings.  
