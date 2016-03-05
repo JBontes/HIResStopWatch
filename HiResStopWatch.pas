@@ -15,6 +15,7 @@ type
     FStart: int64;
     FStop: int64;
   public
+    class function NeedsManyIterations: boolean; static;
     class function StartNew(LowestTimingOfXAttempts: integer = 10)
       : THiResStopWatch; static;
     procedure Stop;
@@ -44,6 +45,32 @@ begin
 end;
 { THiResStopWatch }
 
+function IsTimerBroken: boolean;
+{$ifdef CPUX86}
+asm
+  //Make sure RDTSC measure CPU cycles, not wall clock time.
+  push ebx
+  mov eax,$80000007  //Has TSC Invariant support?
+  cpuid
+  pop ebx
+  xor eax,eax        //Assume no
+  and edx,$10        //test TSC_invariant bit
+  setnz al           //If TSC = broken, return true.
+end;
+{$endif}
+  //Make sure RDTSC measure CPU cycles, not wall clock time.
+{$ifdef CPUX64}
+asm
+  mov r8,rbx
+  mov eax,$80000007  //TSC Invariant support?
+  cpuid
+  mov rbx,r8
+  xor eax,eax
+  and edx,$10 //test bit 8
+  setnz al
+end;
+{$endif}
+
 function RDTSC: int64;
 {$IFDEF CPUX64}
 asm
@@ -71,6 +98,7 @@ asm
   cpuid         // On x86 we can't assume the existance of RDTSP
   pop ebx       // so use CPUID to serialize
   {$ENDIF}
+  lfence
   rdtsc
   {$ELSE}
 error !
@@ -119,6 +147,11 @@ begin
   else
     EmptyLoopTime := 0;
   Result := NormalTime - EmptyLoopTime;
+end;
+
+class function THiResStopWatch.NeedsManyIterations: boolean;
+begin
+  Result:= IsTimerBroken;
 end;
 
 class function THiResStopWatch.Sample(A: TProc; Repeats: integer;

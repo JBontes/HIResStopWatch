@@ -60,6 +60,8 @@ var
   Timer: THiResStopWatch;
   Time1, Time2: int64;
 begin
+  if Timer.NeedsManyIterations then Memo1.Lines.Add('TSC is invariant, use many iterations to force the CPU to run at 100%')
+  else Memo1.Lines.Add('Lucky you, your CPU is not broken');
   //Anonymous procs work
   Time1:= Timer.Sample(procedure begin Sleep(1); end, Repeats, nil ,1);
   Time2:= Timer.Sample(procedure begin Sleep(2); end, Repeats, nil ,1);
