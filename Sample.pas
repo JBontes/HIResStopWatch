@@ -77,6 +77,8 @@ begin
   //Gives very accurate timings.
   Memo1.Lines.Add(Format('Misprediction takes %d cycles',[time1]));
   Memo1.Lines.Add(Format('Correct prediction takes %d cycles',[time2]));
+  Memo1.Lines.Add('Note that the timer still has an inaccuracy of +/- 1 cycle');
+  Memo1.Lines.Add('This is because of the overhead of rdtscp itself');
 end;
 
 end.

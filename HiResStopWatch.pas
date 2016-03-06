@@ -48,7 +48,7 @@ end;
 function IsTimerBroken: boolean;
 {$ifdef CPUX86}
 asm
-  //Make sure RDTSC measure CPU cycles, not wall clock time.
+  //Check to see if RDTSC runs at fixed or variable frequency
   push ebx
   mov eax,$80000007  //Has TSC Invariant support?
   cpuid
@@ -58,7 +58,7 @@ asm
   setnz al           //If TSC = broken, return true.
 end;
 {$endif}
-  //Make sure RDTSC measure CPU cycles, not wall clock time.
+  //Check to see if RDTSC runs at fixed or variable frequency
 {$ifdef CPUX64}
 asm
   mov r8,rbx
@@ -77,15 +77,20 @@ asm
   {$IFDEF AllowOutOfOrder}
   rdtsc
   {$ELSE}
-  rdtscp        // On x64 we can use the serializing version of RDTSC
-  push rbx      // Serialize the code after, to avoid OoO sneaking in
-  push rax      // later instructions before the RDTSCP runs.
-  push rdx      // See: http://www.intel.de/content/dam/www/public/us/en/documents/white-papers/ia-32-ia-64-benchmark-code-execution-paper.pdf
-  xor eax,eax
-  cpuid
-  pop rdx
-  pop rax
-  pop rbx
+    rdtscp       //rdstcp is read serialized, it will not execute too early.
+    //also ensure it does not execute too late
+    mov r8,rdx   //rdtscp changes rdx and rax, force dependency chain on rdx
+    xor r8,rbx   //push rbx, do not allow push rbx to execute OoO
+    xor rbx,rdx  //rbx=r8
+    xor rbx,r8   //rbx = 0
+    push rdx
+    push rax
+    mov rax,rbx  //rax = 0, but in a way that excludes OoO execution.
+    cpuid
+    pop rax
+    pop rdx
+    mov rbx,r8
+    xor rbx,rdx  //restore rbx
   {$ENDIF}
   shl rdx,32
   or rax,rdx
@@ -98,7 +103,6 @@ asm
   cpuid         // On x86 we can't assume the existance of RDTSP
   pop ebx       // so use CPUID to serialize
   {$ENDIF}
-  lfence
   rdtsc
   {$ELSE}
 error !
