@@ -33,6 +33,22 @@ type
   end;
 
 
+//{$define ForceRDTSCP}
+///  uncomment if you want extra accuracy in x86.
+///  should run on all modern processors.
+
+
+
+//{$define AllowOutOfOrder}
+///  useful if you want to time the effect of mispredicted brances
+///  make sure to execute the timing code as soon as possible after the
+///  branch.
+{$ifdef AllowOutOfOrder}
+  {$undef ForceRDTSCP}
+{$endif}
+
+
+
 
 implementation
 
@@ -44,6 +60,7 @@ begin
     Result := A;
 end;
 { THiResStopWatch }
+
 
 function IsTimerBroken: boolean;
 {$ifdef CPUX86}
@@ -91,21 +108,43 @@ asm
     pop rdx
     mov rbx,r8
     xor rbx,rdx  //restore rbx
-  {$ENDIF}
+  {$ENDIF AllowOutOfOrder}
   shl rdx,32
   or rax,rdx
-  {$ELSE}
+  {$else}
 {$IFDEF CPUX86}
 asm
   {$IFNDEF AllowOutOfOrder}
-  xor eax,eax
-  push ebx
-  cpuid         // On x86 we can't assume the existance of RDTSP
-  pop ebx       // so use CPUID to serialize
-  {$ENDIF}
-  rdtsc
-  {$ELSE}
-error !
+    {$IFDEF ForceRDTSCP}
+      db $0F, $01, $F9   //rdtscp
+      //rdtscp       //rdstcp is read serialized, it will not execute too early.
+      //also ensure it does not execute too late
+      mov ecx,edx   //rdtscp changes rdx and rax, force dependency chain on rdx
+      xor ecx,ebx   //push ebx, do not allow push ebx to execute OoO
+      xor ebx,edx   //ebx=ecx
+      xor ebx,ecx   //ebx = 0
+      push edx
+      push ecx
+      push eax
+      mov eax,ebx  //rax = 0, but in a way that excludes OoO execution.
+      cpuid
+      pop eax
+      pop ecx
+      pop edx
+      mov ebx,ecx
+      xor ebx,edx  //restore rbx
+      {$else}
+      xor eax,eax
+      push ebx
+      cpuid         // On x86 we can't assume the existance of RDTSP
+      rdtsc
+      pop ebx       // so use CPUID to serialize
+      {$ENDIF}
+      {$ELSE}
+      rdtsc
+    {$ELSE}
+  error !
+{$ENDIF}
 {$ENDIF}
 {$ENDIF}
 end;
